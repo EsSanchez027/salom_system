@@ -1,0 +1,1180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Salon Appointment and Customer Service System</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+</head>
+<body>
+
+<!-- LOGIN PAGE -->
+<div id="loginPage">
+    <div class="login-container">
+        <div class="login-box">
+            <div class="login-logo">&#9986;</div>
+            <h2>Salon Appointment and Customer Service System</h2>
+            <p>Please login to continue</p>
+            <div class="form-group">
+                <label>Email Address:</label>
+                <input type="email" id="loginEmail" placeholder="Enter email" />
+            </div>
+            <div class="form-group">
+                <label>Password:</label>
+                <input type="password" id="loginPass" placeholder="Enter password"
+                       onkeydown="if(event.key==='Enter') doLogin()" />
+            </div>
+            <div class="form-group">
+                <label>User Type:</label>
+                <select id="loginRole">
+                    <option value="">Select User Type</option>
+                    <option value="admin">Admin</option>
+                    <option value="staff">Staff</option>
+                    <option value="customer">Customer</option>
+                </select>
+            </div>
+            <div id="loginError" class="error-msg" style="display:none;"></div>
+            <button class="btn-login" onclick="doLogin()">Login</button>
+            <p style="text-align:center;margin-top:14px;font-size:13px;color:#666;">
+                Don't have an account?
+                <a href="#" onclick="showRegister()" style="color:#c0392b;font-weight:600;text-decoration:none;">Create one here</a>
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- REGISTER PAGE -->
+<div id="registerPage" class="hidden">
+    <div class="login-container">
+        <div class="login-box">
+            <div class="login-logo">&#9986;</div>
+            <h2>Create an Account</h2>
+            <p>Fill in your details to register</p>
+            <div class="form-group">
+                <label>Register as: <span style="color:#c0392b;">*</span></label>
+                <select id="regRole" style="width:100%;padding:9px 12px;border:1px solid #ddd;border-radius:6px;font-size:14px;color:#333;">
+                    <option value="customer">Customer</option>
+                    <option value="staff">Staff</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Full Name: <span style="color:#c0392b;">*</span></label>
+                <input type="text" id="regName" placeholder="e.g. Maria Santos" />
+            </div>
+            <div class="form-group">
+                <label>Email Address: <span style="color:#c0392b;">*</span></label>
+                <input type="email" id="regEmail" placeholder="e.g. maria@email.com" />
+            </div>
+            <div class="form-group">
+                <label>Phone Number:</label>
+                <input type="text" id="regPhone" placeholder="e.g. 09123456789" />
+            </div>
+            <div class="form-group">
+                <label>Password: <span style="color:#c0392b;">*</span></label>
+                <input type="password" id="regPass" placeholder="At least 6 characters" />
+            </div>
+            <div class="form-group">
+                <label>Confirm Password: <span style="color:#c0392b;">*</span></label>
+                <input type="password" id="regPassConfirm" placeholder="Re-enter password"
+                       onkeydown="if(event.key==='Enter') doRegister()" />
+            </div>
+            <div id="regError" class="error-msg" style="display:none;"></div>
+            <div id="regSuccess" style="display:none;color:#27ae60;font-size:13px;margin-bottom:10px;text-align:center;"></div>
+            <button class="btn-login" onclick="doRegister()">Create Account</button>
+            <p style="text-align:center;margin-top:14px;font-size:13px;color:#666;">
+                Already have an account?
+                <a href="#" onclick="showLogin()" style="color:#c0392b;font-weight:600;text-decoration:none;">Login here</a>
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="mainApp" class="hidden">
+    <nav class="navbar" id="navbar"></nav>
+    <div class="page-wrapper">
+
+        <!-- DASHBOARD -->
+        <div id="page-dashboard" class="hidden">
+            <div class="stats-row">
+                <div class="stat-box"><div class="stat-num" id="statTotal">0</div><div class="stat-label">Total Appointments</div></div>
+                <div class="stat-box"><div class="stat-num" id="statPending">0</div><div class="stat-label">Pending</div></div>
+                <div class="stat-box"><div class="stat-num" id="statConfirmed">0</div><div class="stat-label">Confirmed</div></div>
+                <div class="stat-box"><div class="stat-num" id="statCompleted">0</div><div class="stat-label">Completed</div></div>
+            </div>
+            <div class="content-box-wide">
+                <h2>Recent Appointments</h2>
+                <div class="table-wrapper"><table>
+                    <thead><tr><th>Customer</th><th>Service</th><th>Date &amp; Time</th><th>Staff</th><th>Status</th></tr></thead>
+                    <tbody id="dashApptBody"><tr><td colspan="5" class="empty-msg">Loading...</td></tr></tbody>
+                </table></div>
+            </div>
+        </div>
+
+        <!-- BOOK APPOINTMENT -->
+        <div id="page-book" class="hidden">
+            <div class="content-box" style="margin: 0 auto;">
+                <h2>Book Appointment</h2>
+                <div class="form-section-label">Step 1: Select Service Type</div>
+                <div class="field-row">
+                    <label>Service Type:</label>
+                    <select id="bookServiceType" onchange="filterBookServices()">
+                        <option value="">-- Select Type --</option>
+                        <option value="In-Salon">In-Salon Service</option>
+                        <option value="Home Service">Home Service</option>
+                    </select>
+                </div>
+                <div class="form-section-label">Step 2: Select Service</div>
+                <div class="field-row">
+                    <label>Service:</label>
+                    <select id="bookService"><option value="">-- Select Type First --</option></select>
+                </div>
+                <div class="form-section-label">Step 3: Appointment Details</div>
+                <div class="field-row"><label>Select Staff:</label><select id="bookStaff"></select></div>
+                <div class="field-row"><label>Date:</label><input type="date" id="bookDate" /></div>
+                <div class="field-row"><label>Time:</label><select id="bookTime"></select></div>
+                <button class="btn-dark" onclick="submitBooking()">Book Appointment</button>
+            </div>
+        </div>
+
+        <!-- MY APPOINTMENTS (Customer) -->
+        <div id="page-myappointments" class="hidden">
+            <div class="content-box-wide">
+                <h2>My Appointments</h2>
+                <div class="toolbar">
+                    <input type="text" id="myApptSearch" placeholder="Search service..." oninput="filterMyAppointments()" />
+                    <select id="myApptStatusFilter" onchange="filterMyAppointments()">
+                        <option value="">All Status</option>
+                        <option value="pending">Pending</option>
+                        <option value="confirmed">Confirmed</option>
+                        <option value="completed">Completed</option>
+                        <option value="cancelled">Cancelled</option>
+                    </select>
+                </div>
+                <div class="table-wrapper"><table>
+                    <thead><tr><th>Service</th><th>Type</th><th>Date</th><th>Time</th><th>Staff</th><th>Status</th><th>Action</th></tr></thead>
+                    <tbody id="myApptBody"><tr><td colspan="7" class="empty-msg">Loading...</td></tr></tbody>
+                </table></div>
+            </div>
+        </div>
+
+        <!-- ASSIGNED APPOINTMENTS (Staff) -->
+        <div id="page-assigned" class="hidden">
+            <div class="content-box-wide">
+                <h2>My Assigned Appointments</h2>
+                <div class="toolbar">
+                    <input type="text" id="assignedSearch" placeholder="Search customer or service..." oninput="filterAssigned()" />
+                    <select id="assignedStatusFilter" onchange="filterAssigned()">
+                        <option value="">All Status</option>
+                        <option value="pending">Pending</option>
+                        <option value="confirmed">Confirmed</option>
+                        <option value="completed">Completed</option>
+                        <option value="cancelled">Cancelled</option>
+                    </select>
+                </div>
+                <div class="table-wrapper"><table>
+                    <thead><tr><th>Customer</th><th>Service</th><th>Type</th><th>Date</th><th>Time</th><th>Status</th><th>Update</th></tr></thead>
+                    <tbody id="assignedBody"><tr><td colspan="7" class="empty-msg">Loading...</td></tr></tbody>
+                </table></div>
+            </div>
+        </div>
+
+        <!-- MONITOR APPOINTMENTS (Admin) -->
+        <div id="page-appointments" class="hidden">
+            <div class="content-box-wide">
+                <h2>Monitor Appointments</h2>
+                <div class="toolbar">
+                    <input type="text" id="apptSearch" placeholder="Search customer or service..." oninput="filterAppointments()" />
+                    <select id="apptStatusFilter" onchange="filterAppointments()">
+                        <option value="">All Status</option>
+                        <option value="pending">Pending</option>
+                        <option value="confirmed">Confirmed</option>
+                        <option value="completed">Completed</option>
+                        <option value="cancelled">Cancelled</option>
+                    </select>
+                </div>
+                <div class="table-wrapper"><table>
+                    <thead><tr><th>Customer</th><th>Service</th><th>Type</th><th>Date</th><th>Time</th><th>Staff</th><th>Status</th><th>Action</th></tr></thead>
+                    <tbody id="apptBody"><tr><td colspan="8" class="empty-msg">Loading...</td></tr></tbody>
+                </table></div>
+            </div>
+        </div>
+
+        <!-- MANAGE SERVICES (Admin) -->
+        <div id="page-services" class="hidden">
+            <div class="content-box-wide">
+                <h2>Manage Services</h2>
+                <div class="toolbar">
+                    <input type="text" id="svcSearch" placeholder="Search service..." oninput="filterServices()" />
+                    <button class="btn-add" onclick="openAddService()">+ Add Service</button>
+                </div>
+                <div class="table-wrapper"><table>
+                    <thead><tr><th>Service Name</th><th>Type</th><th>Price</th><th>Duration</th><th>Actions</th></tr></thead>
+                    <tbody id="svcBody"><tr><td colspan="5" class="empty-msg">Loading...</td></tr></tbody>
+                </table></div>
+            </div>
+        </div>
+
+        <!-- MANAGE USERS (Admin) -->
+        <div id="page-users" class="hidden">
+            <div class="content-box-wide">
+                <h2>Manage Users</h2>
+                <div class="toolbar">
+                    <input type="text" id="userSearch" placeholder="Search user..." oninput="filterUsers()" />
+                    <button class="btn-add" onclick="openAddUser()">+ Add User</button>
+                </div>
+                <div class="table-wrapper"><table>
+                    <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Phone</th><th>Actions</th></tr></thead>
+                    <tbody id="userBody"><tr><td colspan="5" class="empty-msg">Loading...</td></tr></tbody>
+                </table></div>
+            </div>
+        </div>
+
+        <!-- REPORTS (Admin) -->
+        <div id="page-reports" class="hidden">
+            <div class="section-header">
+                <h2>Reports</h2>
+                <p style="color:#777;font-size:13px;margin-top:2px;">
+                </p>
+            </div>
+            <div class="reports-grid">
+                <div class="report-card">
+                    <div class="report-card-title"> Letterhead Information</div>
+                    <div class="report-field">
+                        <label>Salon Name</label>
+                        <input type="text" id="rep-salon-name" placeholder="e.g. Luxe Beauty Salon" />
+                    </div>
+                    <div class="report-field">
+                        <label>Address</label>
+                        <input type="text" id="rep-salon-address" placeholder="e.g. 123 Main St, Quezon City" />
+                    </div>
+                    <div class="report-field">
+                        <label>Contact / Email</label>
+                        <input type="text" id="rep-salon-contact" placeholder="e.g. 09XX-XXX-XXXX | salon@email.com" />
+                    </div>
+                </div>
+                <div class="report-card">
+                    <div class="report-card-title"> Report Settings</div>
+                    <div class="report-field">
+                        <label>Report Type</label>
+                        <select id="rep-type">
+                            <option value="appointments">Appointments Report</option>
+                            <option value="services">Services Report</option>
+                            <option value="summary">Summary / Dashboard Report</option>
+                        </select>
+                    </div>
+                    <div class="report-row">
+                        <div class="report-field">
+                            <label>Date From</label>
+                            <input type="date" id="rep-from" />
+                        </div>
+                        <div class="report-field">
+                            <label>Date To</label>
+                            <input type="date" id="rep-to" />
+                        </div>
+                    </div>
+                    <div class="report-quick-range">
+                        <span>Quick:</span>
+                        <button class="btn-range" onclick="setReportRange('this-month')">This Month</button>
+                        <button class="btn-range" onclick="setReportRange('last-month')">Last Month</button>
+                        <button class="btn-range" onclick="setReportRange('this-year')">This Year</button>
+                    </div>
+                </div>
+                <div class="report-card">
+                    <div class="report-card-title"> Signatories</div>
+                    <div class="report-row">
+                        <div class="report-field">
+                            <label>Prepared by &mdash; Full Name</label>
+                            <input type="text" id="rep-prep-name" placeholder="e.g. Maria Cruz" />
+                            <label style="margin-top:6px;">Position / Title</label>
+                            <input type="text" id="rep-prep-pos" placeholder="e.g. Salon Manager" />
+                        </div>
+                        <div class="report-field">
+                            <label>Approved by &mdash; Full Name</label>
+                            <input type="text" id="rep-appr-name" placeholder="e.g. Juan dela Cruz" />
+                            <label style="margin-top:6px;">Position / Title</label>
+                            <input type="text" id="rep-appr-pos" placeholder="e.g. Owner / Administrator" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div style="text-align:center; margin-top:24px;">
+                <button id="btn-gen-report" onclick="generateReport()" class="btn-generate">
+                    &#11015;&#65039; Generate &amp; Download PDF Report
+                </button>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- SERVICE MODAL -->
+<div id="svcModal" class="modal-overlay">
+    <div class="modal-box">
+        <h3 id="svcModalTitle">Add Service</h3>
+        <div class="field-row"><label>Service Name:</label><input type="text" id="svcNameInput" placeholder="e.g. Haircut" /></div>
+        <div class="field-row">
+            <label>Service Type:</label>
+            <select id="svcTypeInput">
+                <option value="In-Salon">In-Salon</option>
+                <option value="Home Service">Home Service</option>
+                <option value="Both">Both</option>
+            </select>
+        </div>
+        <div class="field-row"><label>Price (&#8369;):</label><input type="number" id="svcPriceInput" placeholder="e.g. 250" min="0" /></div>
+        <div class="field-row"><label>Duration (minutes):</label><input type="number" id="svcDurInput" placeholder="e.g. 45" min="1" /></div>
+        <div class="modal-actions">
+            <button class="btn-cancel" onclick="closeModal('svcModal')">Cancel</button>
+            <button class="btn-save" onclick="saveService()">Save</button>
+        </div>
+    </div>
+</div>
+
+<!-- USER MODAL -->
+<div id="userModal" class="modal-overlay">
+    <div class="modal-box">
+        <h3 id="userModalTitle">Add User</h3>
+        <div class="field-row"><label>Full Name:</label><input type="text" id="userNameInput" placeholder="e.g. Maria Santos" /></div>
+        <div class="field-row"><label>Email:</label><input type="email" id="userEmailInput" placeholder="e.g. maria@email.com" /></div>
+        <div class="field-row">
+            <label>Role:</label>
+            <select id="userRoleInput">
+                <option value="admin">Admin</option>
+                <option value="staff">Staff</option>
+                <option value="customer">Customer</option>
+            </select>
+        </div>
+        <div class="field-row"><label>Phone:</label><input type="text" id="userPhoneInput" placeholder="e.g. 09123456789" /></div>
+        <div class="field-row"><label>Password <span style="font-weight:normal;color:#888;">(default: salon123)</span>:</label><input type="text" id="userPassInput" placeholder="Leave blank for default" /></div>
+        <div class="modal-actions">
+            <button class="btn-cancel" onclick="closeModal('userModal')">Cancel</button>
+            <button class="btn-save" onclick="saveUser()">Save</button>
+        </div>
+    </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+// ===== CONFIG =====
+var API = '';
+
+// ===== STATE =====
+var currentUser = null;
+var currentRole = null;
+var currentUserId = null;
+var allAppointments = [];
+var allServices = [];
+var allUsers = [];
+var editServiceId = null;
+var editUserId = null;
+
+// ===== HELPERS =====
+function apiFetch(url, method, body) {
+    var options = { method: method || 'GET', headers: { 'Content-Type': 'application/json' } };
+    if (body) options.body = JSON.stringify(body);
+    return fetch(url, options).then(function(r) { return r.json(); });
+}
+
+function capitalize(str) {
+    if (!str) return '';
+    return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+function formatDate(d) {
+    if (!d) return '';
+    var parts = String(d).split('T')[0].split('-');
+    var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return months[parseInt(parts[1], 10) - 1] + ' ' + parseInt(parts[2], 10) + ', ' + parts[0];
+}
+
+function showToast(msg) {
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(function() { t.classList.remove('show'); }, 2800);
+}
+
+function closeModal(id) {
+    document.getElementById(id).classList.remove('open');
+}
+
+// ===== REGISTER / LOGIN TOGGLE =====
+function showRegister() {
+    document.getElementById('loginPage').classList.add('hidden');
+    document.getElementById('registerPage').classList.remove('hidden');
+    document.getElementById('regRole').value = 'customer';
+    document.getElementById('regName').value = '';
+    document.getElementById('regEmail').value = '';
+    document.getElementById('regPhone').value = '';
+    document.getElementById('regPass').value = '';
+    document.getElementById('regPassConfirm').value = '';
+    document.getElementById('regError').style.display = 'none';
+    document.getElementById('regSuccess').style.display = 'none';
+}
+
+function showLogin() {
+    document.getElementById('registerPage').classList.add('hidden');
+    document.getElementById('loginPage').classList.remove('hidden');
+}
+
+// ===== REGISTER =====
+function doRegister() {
+    var role = document.getElementById('regRole').value;
+    var name = document.getElementById('regName').value.trim();
+    var email = document.getElementById('regEmail').value.trim();
+    var phone = document.getElementById('regPhone').value.trim();
+    var pass = document.getElementById('regPass').value;
+    var passConfirm = document.getElementById('regPassConfirm').value;
+    var err = document.getElementById('regError');
+    var success = document.getElementById('regSuccess');
+
+    err.style.display = 'none';
+    success.style.display = 'none';
+
+    if (!name || !email || !pass || !passConfirm) {
+        err.style.display = 'block';
+        err.textContent = 'Please fill in all required fields.';
+        return;
+    }
+    if (pass !== passConfirm) {
+        err.style.display = 'block';
+        err.textContent = 'Passwords do not match.';
+        return;
+    }
+    if (pass.length < 6) {
+        err.style.display = 'block';
+        err.textContent = 'Password must be at least 6 characters.';
+        return;
+    }
+
+    apiFetch(API + 'register.php', 'POST', { name: name, email: email, phone: phone, password: pass, role: role })
+        .then(function(res) {
+            if (!res.success) { err.style.display = 'block'; err.textContent = res.message; return; }
+            success.style.display = 'block';
+            success.textContent = res.message;
+            setTimeout(function() { showLogin(); document.getElementById('loginEmail').value = email; }, 2000);
+        })
+        .catch(function() { err.style.display = 'block'; err.textContent = 'Cannot connect to server.'; });
+}
+
+// ===== LOGIN =====
+function doLogin() {
+    var email = document.getElementById('loginEmail').value.trim();
+    var pass = document.getElementById('loginPass').value;
+    var role = document.getElementById('loginRole').value;
+    var err = document.getElementById('loginError');
+
+    if (!email || !pass || !role) {
+        err.style.display = 'block';
+        err.textContent = !role ? 'Please select a User Type.' : 'Please fill in all fields.';
+        return;
+    }
+
+    apiFetch(API + 'login.php', 'POST', { email: email, password: pass })
+        .then(function(res) {
+            if (!res.success) { err.style.display = 'block'; err.textContent = res.message; return; }
+            if (res.user.role !== role) {
+                err.style.display = 'block';
+                err.textContent = 'Incorrect User Type selected for this account.';
+                return;
+            }
+            err.style.display = 'none';
+            currentUser = res.user.name;
+            currentRole = res.user.role;
+            currentUserId = res.user.id;
+            document.getElementById('loginPage').classList.add('hidden');
+            document.getElementById('mainApp').classList.remove('hidden');
+            buildNavbar();
+            showPage('dashboard');
+        })
+        .catch(function() { err.style.display = 'block'; err.textContent = 'Cannot connect to server. Make sure XAMPP is running.'; });
+}
+
+function doLogout() {
+    currentUser = null; currentRole = null; currentUserId = null;
+    document.getElementById('mainApp').classList.add('hidden');
+    document.getElementById('registerPage').classList.add('hidden');
+    document.getElementById('loginPage').classList.remove('hidden');
+    document.getElementById('loginEmail').value = '';
+    document.getElementById('loginPass').value = '';
+    document.getElementById('loginRole').value = '';
+    document.getElementById('loginError').style.display = 'none';
+}
+
+// ===== NAVBAR =====
+function buildNavbar() {
+    var nav = document.getElementById('navbar');
+    nav.innerHTML = '';
+    var links = [{ id: 'navDashboard', label: 'Dashboard', page: 'dashboard' }];
+    if (currentRole === 'customer') {
+        links.push({ id: 'navBook', label: 'Book Appointment', page: 'book' });
+        links.push({ id: 'navMyAppt', label: 'My Appointments', page: 'myappointments' });
+    }
+    if (currentRole === 'staff') {
+        links.push({ id: 'navAssigned', label: 'My Appointments', page: 'assigned' });
+    }
+    if (currentRole === 'admin') {
+        links.push({ id: 'navAppointments', label: 'Monitor Appointments', page: 'appointments' });
+        links.push({ id: 'navServices', label: 'Manage Services', page: 'services' });
+        links.push({ id: 'navUsers', label: 'Manage Users', page: 'users' });
+        links.push({ id: 'navReports', label: '📊 Reports', page: 'reports' });
+    }
+    links.forEach(function(l) {
+        var a = document.createElement('a');
+        a.id = l.id; a.textContent = l.label;
+        a.onclick = function() { showPage(l.page); };
+        nav.appendChild(a);
+    });
+    var right = document.createElement('div');
+    right.className = 'nav-right';
+    var userSpan = document.createElement('span');
+    userSpan.className = 'nav-user';
+    userSpan.textContent = currentUser + ' (' + capitalize(currentRole) + ')';
+    right.appendChild(userSpan);
+    var logout = document.createElement('a');
+    logout.textContent = 'Logout';
+    logout.onclick = doLogout;
+    right.appendChild(logout);
+    nav.appendChild(right);
+}
+
+//NAVIGATION 
+function showPage(page) {
+    // BUG FIX 2: Added 'reports' to allPages
+    var allPages = ['dashboard','book','myappointments','assigned','appointments','services','users','reports'];
+    allPages.forEach(function(p) { var el = document.getElementById('page-' + p); if (el) el.classList.add('hidden'); });
+    document.querySelectorAll('.navbar a').forEach(function(a) { a.classList.remove('active'); });
+    var target = document.getElementById('page-' + page);
+    if (target) target.classList.remove('hidden');
+    var navMap = { dashboard:'navDashboard', book:'navBook', myappointments:'navMyAppt', assigned:'navAssigned', appointments:'navAppointments', services:'navServices', users:'navUsers', reports:'navReports' };
+    var navEl = document.getElementById(navMap[page]);
+    if (navEl) navEl.classList.add('active');
+    if (page === 'dashboard')      loadDashboard();
+    if (page === 'book')           loadBookPage();
+    if (page === 'myappointments') loadMyAppointments();
+    if (page === 'assigned')       loadAssigned();
+    if (page === 'appointments')   loadAllAppointments();
+    if (page === 'services')       loadServices();
+    if (page === 'users')          loadUsers();
+}
+
+//DASHBOARD 
+function loadDashboard() {
+    var params = '';
+    if (currentRole === 'customer') params = '?role=customer&user_id=' + currentUserId;
+    if (currentRole === 'staff')    params = '?role=staff&staff_id=' + currentUserId;
+    apiFetch(API + 'appointments.php' + params)
+        .then(function(res) {
+            if (!res.success) return;
+            var data = res.data;
+            allAppointments = data;
+            document.getElementById('statTotal').textContent     = data.length;
+            document.getElementById('statPending').textContent   = data.filter(function(a) { return a.status === 'pending'; }).length;
+            document.getElementById('statConfirmed').textContent = data.filter(function(a) { return a.status === 'confirmed'; }).length;
+            document.getElementById('statCompleted').textContent = data.filter(function(a) { return a.status === 'completed'; }).length;
+            var tbody = document.getElementById('dashApptBody');
+            tbody.innerHTML = '';
+            var recent = data.slice(0, 6);
+            if (recent.length === 0) { tbody.innerHTML = '<tr><td colspan="5" class="empty-msg">No appointments yet.</td></tr>'; return; }
+            recent.forEach(function(a) {
+                var tr = document.createElement('tr');
+                tr.innerHTML = '<td>' + (a.customer||'—') + '</td><td>' + (a.service||'—') + '</td><td>' + formatDate(a.appointment_date) + ' ' + a.appointment_time + '</td><td>' + (a.staff||'—') + '</td><td><span class="badge badge-' + a.status + '">' + capitalize(a.status) + '</span></td>';
+                tbody.appendChild(tr);
+            });
+        });
+}
+
+//BOOK APPOINTMENT
+function loadBookPage() {
+    apiFetch(API + 'users.php?role=staff').then(function(res) {
+        var staffSel = document.getElementById('bookStaff');
+        staffSel.innerHTML = '<option value="">Any Available Staff</option>';
+        if (res.success) {
+            res.data.forEach(function(u) {
+                var opt = document.createElement('option');
+                opt.value = u.id; opt.textContent = u.name;
+                staffSel.appendChild(opt);
+            });
+        }
+    });
+    var timeSelect = document.getElementById('bookTime');
+    timeSelect.innerHTML = '';
+    ['09:00','09:30','10:00','10:30','11:00','11:30','12:00','12:30','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00'].forEach(function(t) {
+        var opt = document.createElement('option');
+        opt.value = t; opt.textContent = t;
+        timeSelect.appendChild(opt);
+    });
+    document.getElementById('bookServiceType').value = '';
+    document.getElementById('bookService').innerHTML = '<option value="">-- Select Type First --</option>';
+}
+
+function filterBookServices() {
+    var type = document.getElementById('bookServiceType').value;
+    var svcSel = document.getElementById('bookService');
+    svcSel.innerHTML = '<option value="">-- Select a service --</option>';
+    if (!type) return;
+    apiFetch(API + 'services.php?type=' + encodeURIComponent(type)).then(function(res) {
+        if (!res.success) return;
+        res.data.forEach(function(s) {
+            var opt = document.createElement('option');
+            opt.value = s.id;
+            opt.textContent = s.name + ' (\u20B1' + parseFloat(s.price).toLocaleString() + ' - ' + s.duration + ' mins)';
+            svcSel.appendChild(opt);
+        });
+    });
+}
+
+function submitBooking() {
+    var svcType   = document.getElementById('bookServiceType').value;
+    var serviceId = document.getElementById('bookService').value;
+    var staffId   = document.getElementById('bookStaff').value || null;
+    var date      = document.getElementById('bookDate').value;
+    var time      = document.getElementById('bookTime').value;
+
+    if (!svcType || !serviceId || !date || !time) {
+        alert('Please fill in all required fields.');
+        return;
+    }
+
+    apiFetch(API + 'appointments.php', 'POST', {
+        customer_id: currentUserId, service_id: serviceId,
+        staff_id: staffId, service_type: svcType, date: date, time: time
+    }).then(function(res) {
+        if (!res.success) { alert(res.message); return; }
+        showToast('Appointment booked successfully!');
+        document.getElementById('bookServiceType').value = '';
+        document.getElementById('bookService').innerHTML = '<option value="">-- Select Type First --</option>';
+        document.getElementById('bookStaff').value = '';
+        document.getElementById('bookDate').value = '';
+    }).catch(function() {
+        alert('Cannot connect to server.');
+    });
+}
+
+//MY APPOINTMENTS (Customer)
+function loadMyAppointments() {
+    apiFetch(API + 'appointments.php?role=customer&user_id=' + currentUserId)
+        .then(function(res) {
+            if (!res.success) return;
+            allAppointments = res.data;
+            renderMyAppointments(res.data);
+        });
+}
+
+function renderMyAppointments(list) {
+    var tbody = document.getElementById('myApptBody');
+    tbody.innerHTML = '';
+    if (list.length === 0) { tbody.innerHTML = '<tr><td colspan="7" class="empty-msg">No appointments found.</td></tr>'; return; }
+    list.forEach(function(a) {
+        var canCancel = (a.status === 'pending')
+            ? '<button class="btn-outline-red" onclick="cancelAppt(' + a.id + ')">Cancel</button>'
+            : '<span style="color:#aaa;">—</span>';
+        var tr = document.createElement('tr');
+        tr.innerHTML = '<td>' + a.service + '</td><td>' + a.service_type + '</td><td>' + formatDate(a.appointment_date) + '</td><td>' + a.appointment_time + '</td><td>' + (a.staff||'—') + '</td><td><span class="badge badge-' + a.status + '">' + capitalize(a.status) + '</span></td><td>' + canCancel + '</td>';
+        tbody.appendChild(tr);
+    });
+}
+
+function filterMyAppointments() {
+    var q = document.getElementById('myApptSearch').value.toLowerCase();
+    var status = document.getElementById('myApptStatusFilter').value;
+    renderMyAppointments(allAppointments.filter(function(a) {
+        return a.service.toLowerCase().includes(q) && (status === '' || a.status === status);
+    }));
+}
+
+function cancelAppt(id) {
+    if (!confirm('Are you sure you want to cancel this appointment?')) return;
+    apiFetch(API + 'appointments.php', 'PUT', { id: id, status: 'cancelled' })
+        .then(function(res) {
+            if (!res.success) { alert('Failed to cancel: ' + res.message); return; }
+            showToast('Appointment cancelled successfully!');
+            loadMyAppointments();
+        })
+        .catch(function() { alert('Cannot connect to server.'); });
+}
+
+//ASSIGNED APPOINTMENTS (Staff)
+function loadAssigned() {
+    apiFetch(API + 'appointments.php?role=staff&staff_id=' + currentUserId)
+        .then(function(res) {
+            if (!res.success) return;
+            allAppointments = res.data;
+            renderAssigned(res.data);
+        });
+}
+
+function renderAssigned(list) {
+    var tbody = document.getElementById('assignedBody');
+    tbody.innerHTML = '';
+    if (list.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="empty-msg">No assigned appointments.</td></tr>';
+        return;
+    }
+    list.forEach(function(a) {
+        var tr = document.createElement('tr');
+        var statusBadge = '<span class="badge badge-' + a.status + '">' + capitalize(a.status) + '</span>';
+        var actionBtn = '';
+        if (a.status === 'pending') {
+            actionBtn = '<button class="btn-dark" style="font-size:12px;padding:4px 10px;background:#2e7d32;" onclick="updateAssignedStatus(' + a.id + ', \'confirmed\')">Confirm</button>';
+        } else if (a.status === 'confirmed') {
+            actionBtn = '<button class="btn-dark" style="font-size:12px;padding:4px 10px;" onclick="updateAssignedStatus(' + a.id + ', \'completed\')">Mark Completed</button>';
+        } else {
+            actionBtn = statusBadge;
+        }
+        tr.innerHTML =
+            '<td>' + a.customer + '</td>' +
+            '<td>' + a.service + '</td>' +
+            '<td>' + a.service_type + '</td>' +
+            '<td>' + formatDate(a.appointment_date) + '</td>' +
+            '<td>' + a.appointment_time + '</td>' +
+            '<td>' + statusBadge + '</td>' +
+            '<td>' + actionBtn + '</td>';
+        tbody.appendChild(tr);
+    });
+}
+
+function filterAssigned() {
+    var q = document.getElementById('assignedSearch').value.toLowerCase();
+    var status = document.getElementById('assignedStatusFilter').value;
+    renderAssigned(allAppointments.filter(function(a) {
+        return (a.customer.toLowerCase().includes(q) || a.service.toLowerCase().includes(q)) && (status === '' || a.status === status);
+    }));
+}
+
+function updateAssignedStatus(id, newStatus) {
+    var confirmMsg = newStatus === 'confirmed' ? 'Confirm this appointment?' : 'Mark this appointment as completed?';
+    if (!confirm(confirmMsg)) return;
+    apiFetch(API + 'appointments.php', 'PUT', { id: id, status: newStatus })
+        .then(function(res) {
+            if (!res.success) { alert(res.message); return; }
+            showToast(newStatus === 'confirmed' ? 'Appointment confirmed!' : 'Appointment completed!');
+            loadAssigned();
+        })
+        .catch(function() { alert('Cannot connect to server.'); });
+}
+
+//MONITOR APPOINTMENTS (Admin)
+function loadAllAppointments() {
+    apiFetch(API + 'appointments.php')
+        .then(function(res) {
+            if (!res.success) return;
+            allAppointments = res.data;
+            renderAppointments(res.data);
+        });
+}
+
+function renderAppointments(list) {
+    var tbody = document.getElementById('apptBody');
+    tbody.innerHTML = '';
+    if (list.length === 0) { tbody.innerHTML = '<tr><td colspan="8" class="empty-msg">No appointments found.</td></tr>'; return; }
+    list.forEach(function(a) {
+        var actionCell = '<select class="status-select" onchange="changeStatus(' + a.id + ', this.value)">' +
+            ['pending','confirmed','completed','cancelled'].map(function(s) {
+                return '<option value="' + s + '"' + (a.status === s ? ' selected' : '') + '>' + capitalize(s) + '</option>';
+            }).join('') + '</select>';
+        var tr = document.createElement('tr');
+        tr.innerHTML = '<td>' + a.customer + '</td><td>' + a.service + '</td><td>' + a.service_type + '</td><td>' + formatDate(a.appointment_date) + '</td><td>' + a.appointment_time + '</td><td>' + (a.staff||'—') + '</td><td><span class="badge badge-' + a.status + '">' + capitalize(a.status) + '</span></td><td>' + actionCell + '</td>';
+        tbody.appendChild(tr);
+    });
+}
+
+function filterAppointments() {
+    var q = document.getElementById('apptSearch').value.toLowerCase();
+    var status = document.getElementById('apptStatusFilter').value;
+    renderAppointments(allAppointments.filter(function(a) {
+        return (a.customer.toLowerCase().includes(q) || a.service.toLowerCase().includes(q)) && (status === '' || a.status === status);
+    }));
+}
+
+function changeStatus(id, newStatus) {
+    apiFetch(API + 'appointments.php', 'PUT', { id: id, status: newStatus })
+        .then(function(res) { showToast(res.message); loadAllAppointments(); });
+}
+
+//MANAGE SERVICES (Admin)
+function loadServices() {
+    apiFetch(API + 'services.php').then(function(res) {
+        if (!res.success) return;
+        allServices = res.data;
+        renderServices(res.data);
+    });
+}
+
+function renderServices(list) {
+    var tbody = document.getElementById('svcBody');
+    tbody.innerHTML = '';
+    if (list.length === 0) { tbody.innerHTML = '<tr><td colspan="5" class="empty-msg">No services found.</td></tr>'; return; }
+    list.forEach(function(s) {
+        var tr = document.createElement('tr');
+        tr.innerHTML = '<td>' + s.name + '</td><td>' + s.type + '</td><td>\u20B1' + parseFloat(s.price).toLocaleString() + '</td><td>' + s.duration + ' mins</td><td><button class="btn-outline" onclick="openEditService(' + s.id + ')">Edit</button><button class="btn-outline-red" onclick="deleteService(' + s.id + ')">Delete</button></td>';
+        tbody.appendChild(tr);
+    });
+}
+
+function filterServices() {
+    var q = document.getElementById('svcSearch').value.toLowerCase();
+    renderServices(allServices.filter(function(s) { return s.name.toLowerCase().includes(q); }));
+}
+
+function openAddService() {
+    editServiceId = null;
+    document.getElementById('svcModalTitle').textContent = 'Add Service';
+    document.getElementById('svcNameInput').value = '';
+    document.getElementById('svcTypeInput').value = 'In-Salon';
+    document.getElementById('svcPriceInput').value = '';
+    document.getElementById('svcDurInput').value = '';
+    document.getElementById('svcModal').classList.add('open');
+}
+
+function openEditService(id) {
+    editServiceId = id;
+    var svc = allServices.find(function(s) { return s.id == id; });
+    document.getElementById('svcModalTitle').textContent = 'Edit Service';
+    document.getElementById('svcNameInput').value = svc.name;
+    document.getElementById('svcTypeInput').value = svc.type;
+    document.getElementById('svcPriceInput').value = svc.price;
+    document.getElementById('svcDurInput').value = svc.duration;
+    document.getElementById('svcModal').classList.add('open');
+}
+
+function saveService() {
+    var name = document.getElementById('svcNameInput').value.trim();
+    var type = document.getElementById('svcTypeInput').value;
+    var price = document.getElementById('svcPriceInput').value;
+    var dur = document.getElementById('svcDurInput').value;
+    if (!name || !price || !dur) { alert('Please fill in all fields.'); return; }
+    var method = editServiceId ? 'PUT' : 'POST';
+    var body = { name: name, type: type, price: price, duration: dur };
+    if (editServiceId) body.id = editServiceId;
+    apiFetch(API + 'services.php', method, body).then(function(res) {
+        showToast(res.message); closeModal('svcModal'); loadServices();
+    });
+}
+
+function deleteService(id) {
+    if (!confirm('Delete this service?')) return;
+    apiFetch(API + 'services.php', 'DELETE', { id: id }).then(function(res) {
+        showToast(res.message); loadServices();
+    });
+}
+
+//MANAGE USERS (Admin)
+function loadUsers() {
+    apiFetch(API + 'users.php').then(function(res) {
+        if (!res.success) return;
+        allUsers = res.data;
+        renderUsers(res.data);
+    });
+}
+
+function renderUsers(list) {
+    var tbody = document.getElementById('userBody');
+    tbody.innerHTML = '';
+    if (list.length === 0) { tbody.innerHTML = '<tr><td colspan="5" class="empty-msg">No users found.</td></tr>'; return; }
+    list.forEach(function(u) {
+        var tr = document.createElement('tr');
+        tr.innerHTML = '<td>' + u.name + '</td><td>' + u.email + '</td><td><span class="badge badge-' + u.role + '">' + capitalize(u.role) + '</span></td><td>' + (u.phone||'—') + '</td><td><button class="btn-outline" onclick="openEditUser(' + u.id + ')">Edit</button><button class="btn-outline-red" onclick="deleteUser(' + u.id + ')">Delete</button></td>';
+        tbody.appendChild(tr);
+    });
+}
+
+function filterUsers() {
+    var q = document.getElementById('userSearch').value.toLowerCase();
+    renderUsers(allUsers.filter(function(u) {
+        return u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q) || u.role.toLowerCase().includes(q);
+    }));
+}
+
+function openAddUser() {
+    editUserId = null;
+    document.getElementById('userModalTitle').textContent = 'Add User';
+    document.getElementById('userNameInput').value = '';
+    document.getElementById('userEmailInput').value = '';
+    document.getElementById('userRoleInput').value = 'customer';
+    document.getElementById('userPhoneInput').value = '';
+    document.getElementById('userPassInput').value = '';
+    document.getElementById('userModal').classList.add('open');
+}
+
+function openEditUser(id) {
+    editUserId = id;
+    var u = allUsers.find(function(u) { return u.id == id; });
+    document.getElementById('userModalTitle').textContent = 'Edit User';
+    document.getElementById('userNameInput').value = u.name;
+    document.getElementById('userEmailInput').value = u.email;
+    document.getElementById('userRoleInput').value = u.role;
+    document.getElementById('userPhoneInput').value = u.phone || '';
+    document.getElementById('userPassInput').value = '';
+    document.getElementById('userModal').classList.add('open');
+}
+
+function saveUser() {
+    var name = document.getElementById('userNameInput').value.trim();
+    var email = document.getElementById('userEmailInput').value.trim();
+    var role = document.getElementById('userRoleInput').value;
+    var phone = document.getElementById('userPhoneInput').value.trim();
+    var pass = document.getElementById('userPassInput').value;
+    if (!name || !email) { alert('Name and email are required.'); return; }
+    var method = editUserId ? 'PUT' : 'POST';
+    var body = { name: name, email: email, role: role, phone: phone, password: pass };
+    if (editUserId) body.id = editUserId;
+    apiFetch(API + 'users.php', method, body).then(function(res) {
+        if (!res.success) { alert(res.message); return; }
+        showToast(res.message); closeModal('userModal'); loadUsers();
+    });
+}
+
+function deleteUser(id) {
+    if (!confirm('Delete this user?')) return;
+    apiFetch(API + 'users.php', 'DELETE', { id: id }).then(function(res) {
+        if (!res.success) { alert(res.message); return; }
+        showToast(res.message); loadUsers();
+    });
+}
+
+//REPORTS
+var PDF_COLOR = [70, 50, 120];
+
+var _repStyle = document.createElement('style');
+_repStyle.textContent = [
+    '.reports-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:16px;}',
+    '.reports-grid .report-card:last-child{grid-column:1/-1;}',
+    '.report-card{background:#fff;border:1px solid #e0d9f5;border-radius:10px;padding:20px;box-shadow:0 2px 8px rgba(70,50,120,.06);}',
+    '.report-card-title{font-weight:700;font-size:14px;color:#46327a;margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid #ede8f9;}',
+    '.report-field{display:flex;flex-direction:column;margin-bottom:10px;flex:1;}',
+    '.report-field label{font-size:12px;font-weight:600;color:#555;margin-bottom:4px;}',
+    '.report-field input,.report-field select{padding:8px 10px;border:1px solid #d0cce8;border-radius:6px;font-size:13px;outline:none;transition:border-color .2s;}',
+    '.report-field input:focus,.report-field select:focus{border-color:#7c5cbf;}',
+    '.report-row{display:flex;gap:12px;}',
+    '.report-quick-range{margin-top:8px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}',
+    '.report-quick-range span{font-size:11px;color:#888;font-weight:600;}',
+    '.btn-range{padding:4px 10px;font-size:11px;border:1px solid #c3b4e8;border-radius:20px;background:#f3eeff;color:#6040a8;cursor:pointer;transition:background .15s;}',
+    '.btn-range:hover{background:#e2d4ff;}',
+    '.btn-generate{padding:13px 36px;font-size:15px;font-weight:700;background:linear-gradient(135deg,#6040a8,#9b6dff);color:#fff;border:none;border-radius:8px;cursor:pointer;box-shadow:0 4px 14px rgba(100,64,168,.35);transition:opacity .2s;}',
+    '.btn-generate:hover{opacity:.88;}',
+    '.btn-generate:disabled{opacity:.5;cursor:not-allowed;}',
+    '@media(max-width:768px){.reports-grid{grid-template-columns:1fr;}.reports-grid .report-card:last-child{grid-column:1;}.report-row{flex-direction:column;}}'
+].join('');
+document.head.appendChild(_repStyle);
+
+function setReportRange(range) {
+    var now = new Date(), fromD, toD;
+    if      (range === 'this-month') { fromD = new Date(now.getFullYear(), now.getMonth(), 1);   toD = new Date(now.getFullYear(), now.getMonth()+1, 0); }
+    else if (range === 'last-month') { fromD = new Date(now.getFullYear(), now.getMonth()-1, 1); toD = new Date(now.getFullYear(), now.getMonth(), 0);   }
+    else if (range === 'this-year')  { fromD = new Date(now.getFullYear(), 0, 1);                toD = new Date(now.getFullYear(), 11, 31);              }
+    function pad(n) { return String(n).padStart(2,'0'); }
+    function iso(d) { return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+    document.getElementById('rep-from').value = iso(fromD);
+    document.getElementById('rep-to').value   = iso(toD);
+}
+
+function getReportConfig() {
+    return {
+        salonName    : document.getElementById('rep-salon-name').value.trim()    || 'Salon Name',
+        salonAddress : document.getElementById('rep-salon-address').value.trim() || 'Salon Address',
+        salonContact : document.getElementById('rep-salon-contact').value.trim() || 'Contact Information',
+        from         : document.getElementById('rep-from').value,
+        to           : document.getElementById('rep-to').value,
+        preparedBy   : document.getElementById('rep-prep-name').value.trim() || '___________________',
+        preparedByPos: document.getElementById('rep-prep-pos').value.trim()  || 'Position',
+        approvedBy   : document.getElementById('rep-appr-name').value.trim() || '___________________',
+        approvedByPos: document.getElementById('rep-appr-pos').value.trim()  || 'Position'
+    };
+}
+
+function pdfFormatDate(str) {
+    if (!str) return '';
+    var p = String(str).split('T')[0].split('-');
+    var m = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return m[parseInt(p[1],10)-1]+' '+parseInt(p[2],10)+', '+p[0];
+}
+
+function drawLetterhead(doc, cfg) {
+    var pW = doc.internal.pageSize.getWidth();
+    doc.setDrawColor(PDF_COLOR[0],PDF_COLOR[1],PDF_COLOR[2]); doc.setLineWidth(3);
+    doc.line(15,10,pW-15,10);
+    doc.setFont('helvetica','bold'); doc.setFontSize(18); doc.setTextColor(30,30,30);
+    doc.text(cfg.salonName.toUpperCase(), pW/2, 21, {align:'center'});
+    doc.setFont('helvetica','normal'); doc.setFontSize(8.5); doc.setTextColor(90,90,90);
+    doc.text(cfg.salonAddress, pW/2, 27, {align:'center'});
+    doc.text(cfg.salonContact, pW/2, 32, {align:'center'});
+    doc.setDrawColor(PDF_COLOR[0],PDF_COLOR[1],PDF_COLOR[2]); doc.setLineWidth(0.5);
+    doc.line(15,37,pW-15,37);
+}
+
+function drawReportMeta(doc, title, cfg) {
+    var pW = doc.internal.pageSize.getWidth(), y = 46;
+    doc.setFont('helvetica','bold'); doc.setFontSize(13); doc.setTextColor(30,30,30);
+    doc.text(title, pW/2, y, {align:'center'}); y+=6;
+    doc.setFont('helvetica','normal'); doc.setFontSize(8.5); doc.setTextColor(100,100,100);
+    doc.text('Period: '+pdfFormatDate(cfg.from)+' - '+pdfFormatDate(cfg.to), pW/2, y, {align:'center'}); y+=5;
+    doc.text('Date Generated: '+new Date().toLocaleDateString('en-PH',{year:'numeric',month:'long',day:'numeric'}), pW/2, y, {align:'center'}); y+=4;
+    doc.setDrawColor(210,210,210); doc.setLineWidth(0.3); doc.line(15,y,pW-15,y);
+    return y+6;
+}
+
+function drawSignatories(doc, cfg) {
+    var pW=doc.internal.pageSize.getWidth(), pH=doc.internal.pageSize.getHeight();
+    var sy=pH-32, colW=65, c1=20, c2=pW-20-colW;
+    doc.setDrawColor(200,200,200); doc.setLineWidth(0.3); doc.line(15,sy-4,pW-15,sy-4);
+    doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(70,70,70);
+    doc.text('Prepared by:', c1, sy);
+    doc.setDrawColor(60,60,60); doc.line(c1,sy+11,c1+colW,sy+11);
+    doc.setFont('helvetica','bold'); doc.setFontSize(8.5); doc.setTextColor(30,30,30);
+    doc.text(cfg.preparedBy, c1, sy+16);
+    doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(100,100,100);
+    doc.text(cfg.preparedByPos, c1, sy+22);
+    doc.setTextColor(70,70,70);
+    doc.text('Approved by:', c2, sy);
+    doc.setDrawColor(60,60,60); doc.line(c2,sy+11,c2+colW,sy+11);
+    doc.setFont('helvetica','bold'); doc.setFontSize(8.5); doc.setTextColor(30,30,30);
+    doc.text(cfg.approvedBy, c2, sy+16);
+    doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(100,100,100);
+    doc.text(cfg.approvedByPos, c2, sy+22);
+    doc.setFontSize(7.5); doc.setTextColor(150,150,150);
+    doc.text('Page 1 of 1', pW/2, pH-6, {align:'center'});
+}
+
+function generateReport() {
+    var cfg  = getReportConfig();
+    var type = document.getElementById('rep-type').value;
+    if (!cfg.from || !cfg.to)  { showToast('Please select a date range.'); return; }
+    if (cfg.from > cfg.to)     { showToast('Start date must be before end date.'); return; }
+    var btn = document.getElementById('btn-gen-report');
+    btn.disabled = true; btn.textContent = 'Generating...';
+    fetch(API+'reports.php?type='+type+'&from='+cfg.from+'&to='+cfg.to)
+        .then(function(r){ return r.json(); })
+        .then(function(res){
+            btn.disabled=false; btn.innerHTML='&#11015;&#65039; Generate &amp; Download PDF Report';
+            if (!res.success) { showToast('Error: '+res.message); return; }
+            if      (type==='appointments') buildAppointmentsPDF(res.data, cfg);
+            else if (type==='services')     buildServicesPDF(res.data, cfg);
+            else if (type==='summary')      buildSummaryPDF(res, cfg);
+        })
+        .catch(function(){
+            btn.disabled=false; btn.innerHTML='&#11015;&#65039; Generate &amp; Download PDF Report';
+            showToast('Failed to connect. Check if reports.php is in the root folder.');
+        });
+}
+
+function buildAppointmentsPDF(data, cfg) {
+    var doc = new window.jspdf.jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
+    drawLetterhead(doc, cfg);
+    var y = drawReportMeta(doc, 'APPOINTMENTS REPORT', cfg);
+    var body = data.map(function(a,i){
+        return [i+1, a.customer, a.service, a.service_type, a.staff,
+                pdfFormatDate(a.appointment_date), a.appointment_time,
+                a.status.charAt(0).toUpperCase()+a.status.slice(1)];
+    });
+    if (!body.length) body=[['','No appointments found for this period.','','','','','','']];
+    doc.autoTable({
+        head:[['#','Customer','Service','Type','Staff','Date','Time','Status']],
+        body:body, startY:y, margin:{left:15,right:15},
+        styles:{fontSize:8,cellPadding:2.5,valign:'middle'},
+        headStyles:{fillColor:PDF_COLOR,textColor:255,fontStyle:'bold'},
+        alternateRowStyles:{fillColor:[248,245,255]},
+        columnStyles:{0:{cellWidth:8,halign:'center'},5:{cellWidth:24},6:{cellWidth:18,halign:'center'},7:{cellWidth:22,halign:'center'}},
+        didParseCell:function(d){
+            if(d.column.index===7&&d.section==='body'&&d.cell.raw){
+                var s=String(d.cell.raw).toLowerCase();
+                d.cell.styles.textColor=s==='completed'?[76,175,80]:s==='confirmed'?[33,150,243]:s==='pending'?[255,152,0]:[244,67,54];
+                d.cell.styles.fontStyle='bold';
+            }
+        }
+    });
+    var fy=doc.lastAutoTable.finalY+5;
+    doc.setFontSize(9);doc.setFont('helvetica','bold');doc.setTextColor(40,40,40);
+    doc.text('Total Records: '+data.length, 15, fy);
+    drawSignatories(doc, cfg);
+    doc.save('Appointments_Report_'+cfg.from+'_to_'+cfg.to+'.pdf');
+    showToast('Appointments Report downloaded!');
+}
+
+function buildServicesPDF(data, cfg) {
+    var doc = new window.jspdf.jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+    drawLetterhead(doc, cfg);
+    var y = drawReportMeta(doc, 'SERVICES REPORT', cfg);
+    var body = data.map(function(s,i){
+        return [i+1, s.name, s.type, 'PHP '+parseFloat(s.price).toFixed(2),
+                s.duration+' min', s.total_bookings||0, s.completed||0, s.cancelled||0];
+    });
+    if (!body.length) body=[['','No services found.','','','','','','']];
+    doc.autoTable({
+        head:[['#','Service Name','Type','Price','Duration','Bookings','Completed','Cancelled']],
+        body:body, startY:y, margin:{left:15,right:15},
+        styles:{fontSize:9,cellPadding:2.5,valign:'middle'},
+        headStyles:{fillColor:PDF_COLOR,textColor:255,fontStyle:'bold'},
+        alternateRowStyles:{fillColor:[248,245,255]},
+        columnStyles:{0:{cellWidth:8,halign:'center'},3:{halign:'right'},4:{halign:'center'},
+                      5:{halign:'center'},6:{halign:'center',textColor:[76,175,80],fontStyle:'bold'},
+                      7:{halign:'center',textColor:[244,67,54]}}
+    });
+    drawSignatories(doc, cfg);
+    doc.save('Services_Report_'+cfg.from+'_to_'+cfg.to+'.pdf');
+    showToast('Services Report downloaded!');
+}
+
+function buildSummaryPDF(res, cfg) {
+    var doc = new window.jspdf.jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+    var pW=doc.internal.pageSize.getWidth(), mg=15;
+    drawLetterhead(doc, cfg);
+    var y = drawReportMeta(doc, 'SUMMARY / DASHBOARD REPORT', cfg);
+    var statuses=['pending','confirmed','completed','cancelled'];
+    var labels=['Pending','Confirmed','Completed','Cancelled'];
+    var colors=[[255,152,0],[33,150,243],[76,175,80],[244,67,54]];
+    var total=0; statuses.forEach(function(s){ total+=(res.byStatus[s]||0); });
+    doc.setFillColor(PDF_COLOR[0],PDF_COLOR[1],PDF_COLOR[2]);
+    doc.roundedRect(mg,y,pW-2*mg,14,2,2,'F');
+    doc.setTextColor(255,255,255); doc.setFont('helvetica','bold'); doc.setFontSize(9);
+    doc.text('TOTAL APPOINTMENTS: '+total+'     |     TOTAL REVENUE: PHP '+parseFloat(res.revenue||0).toLocaleString('en-PH',{minimumFractionDigits:2}),pW/2,y+6,{align:'center'});
+    doc.setFont('helvetica','normal'); doc.setFontSize(7.5);
+    doc.text('Period: '+pdfFormatDate(cfg.from)+' to '+pdfFormatDate(cfg.to),pW/2,y+11,{align:'center'});
+    y+=18;
+    var cW=(pW-2*mg-9)/4, cH=15;
+    for(var i=0;i<4;i++){
+        var x=mg+i*(cW+3);
+        doc.setFillColor(colors[i][0],colors[i][1],colors[i][2]);
+        doc.roundedRect(x,y,cW,cH,2,2,'F');
+        doc.setTextColor(255,255,255); doc.setFont('helvetica','normal'); doc.setFontSize(7);
+        doc.text(labels[i],x+cW/2,y+5,{align:'center'});
+        doc.setFont('helvetica','bold'); doc.setFontSize(13);
+        doc.text(String(res.byStatus[statuses[i]]||0),x+cW/2,y+13,{align:'center'});
+    }
+    y+=cH+9;
+    doc.setFont('helvetica','bold'); doc.setFontSize(10); doc.setTextColor(40,40,40);
+    doc.text('Top Services', mg, y); y+=2;
+    var topRows=(res.topServices||[]).map(function(s,i){ return [i+1,s.name,s.bookings,s.completed]; });
+    if(!topRows.length) topRows=[['--','No data available','--','--']];
+    doc.autoTable({
+        head:[['#','Service Name','Total Bookings','Completed']],
+        body:topRows, startY:y, margin:{left:mg,right:mg},
+        styles:{fontSize:8.5,cellPadding:2},
+        headStyles:{fillColor:PDF_COLOR,textColor:255,fontStyle:'bold'},
+        alternateRowStyles:{fillColor:[248,245,255]},
+        columnStyles:{0:{cellWidth:10,halign:'center'},2:{halign:'center'},3:{halign:'center',textColor:[76,175,80],fontStyle:'bold'}}
+    });
+    y=doc.lastAutoTable.finalY+9;
+    doc.setFont('helvetica','bold'); doc.setFontSize(10); doc.setTextColor(40,40,40);
+    doc.text('Monthly Breakdown', mg, y); y+=2;
+    var mRows=(res.monthly||[]).map(function(m){ return [m.month,m.total,m.completed,m.cancelled]; });
+    if(!mRows.length) mRows=[['--','No data available','--','--']];
+    doc.autoTable({
+        head:[['Month','Total','Completed','Cancelled']],
+        body:mRows, startY:y, margin:{left:mg,right:mg},
+        styles:{fontSize:8.5,cellPadding:2},
+        headStyles:{fillColor:PDF_COLOR,textColor:255,fontStyle:'bold'},
+        alternateRowStyles:{fillColor:[248,245,255]},
+        columnStyles:{1:{halign:'center'},2:{halign:'center',textColor:[76,175,80],fontStyle:'bold'},3:{halign:'center',textColor:[244,67,54]}}
+    });
+    drawSignatories(doc, cfg);
+    doc.save('Summary_Report_'+cfg.from+'_to_'+cfg.to+'.pdf');
+    showToast('Summary Report downloaded!');
+}
+</script>
+
+</body>
+</html>
